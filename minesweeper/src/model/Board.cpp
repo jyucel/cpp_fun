@@ -8,6 +8,7 @@
 Board::Board(int rows, int cols, int mines)
     : _rows(rows), _cols(cols), _mines(mines)
 {
+    // Kontroll: Om det är lika många minor som rutor, finns det inga säkra rutor kvar.
     if (mines >= rows * cols)
         throw std::invalid_argument("Too many mines for board size");
 
@@ -31,6 +32,8 @@ void Board::place_mines(int first_row, int first_col) {
     const int dr[] = {-1,-1,-1, 0, 0, 1, 1, 1};
     const int dc[] = {-1, 0, 1,-1, 1,-1, 0, 1};
 
+    // Den ruta du klickar på först, och alla rutor bredvid, får aldrig en mina.
+    // Då kan du alltid öppna ett säkert område på första draget.
     std::vector<std::pair<int,int>> excluded;
     excluded.push_back({first_row, first_col});
     for (int d = 0; d < 8; d++) {
@@ -40,6 +43,7 @@ void Board::place_mines(int first_row, int first_col) {
             excluded.push_back({nr, nc});
     }
 
+    // Bygg en lista över alla tillåtna positioner
     std::vector<std::pair<int,int>> candidates;
     candidates.reserve(_rows * _cols);
 
@@ -51,6 +55,7 @@ void Board::place_mines(int first_row, int first_col) {
         }
     }
 
+    // Slumpa om kandidatpositionerna och ta de första _mines som minplatser
     std::mt19937 rng{std::random_device{}()};
     std::shuffle(candidates.begin(), candidates.end(), rng);
 
@@ -84,10 +89,13 @@ void Board::flood_fill(int row, int col) {
 
     Cell& cell = _grid[row][col];
     if (cell.is_revealed || cell.is_mine) return;
+    // Rutor med flagga öppnas inte automatiskt. Spelaren har markerat dem med flit.
     if (cell.mark != MarkState::None) return;
 
     cell.is_revealed = true;
 
+    // Fortsätt bara öppna rutor om det inte finns någon mina bredvid.
+    // Om det finns minor runt rutan, stannar öppningen där.
     if (cell.adjacent_mines == 0) {
         const int dr[] = {-1,-1,-1, 0, 0, 1, 1, 1};
         const int dc[] = {-1, 0, 1,-1, 1,-1, 0, 1};
@@ -100,12 +108,15 @@ void Board::reveal(int row, int col) {
     if (!in_bounds(row, col)) return;
 
     Cell& cell = _grid[row][col];
+    // Rutor med flagga kan inte öppnas av misstag. Du måste ta bort flaggan först.
     if (cell.is_revealed || cell.mark == MarkState::Flagged) return;
 
+    // När du öppnar en ruta för första gången placeras minorna. Den rutan är alltid säker.
     if (!_mines_placed)
         place_mines(row, col);
 
     if (cell.is_mine) {
+        // Om du öppnar en ruta med en mina avslöjas den direkt. Spelet ser detta och du förlorar.
         cell.is_revealed = true;
         return;
     }
@@ -136,6 +147,7 @@ int Board::mines()        const { return _mines; }
 bool Board::mines_placed() const { return _mines_placed; }
 
 bool Board::all_revealed() const {
+    // Minor räknas inte — de behöver aldrig avslöjas för att vinna
     for (int r = 0; r < _rows; r++)
         for (int c = 0; c < _cols; c++)
             if (!_grid[r][c].is_mine && !_grid[r][c].is_revealed)

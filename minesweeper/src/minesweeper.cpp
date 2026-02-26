@@ -4,6 +4,7 @@
 #include "controller/InputHandler.h"
 #include <iostream>
 
+// Visar en meny och väntar på att du väljer nivå. Alla andra tecken ignoreras.
 Difficulty select_difficulty() {
     std::cout << "\033[2J\033[H";  // clear screen
     std::cout << "╔═══════════════════╗\n";
@@ -32,8 +33,10 @@ int main() {
 
     Game game(difficulty);
     Renderer renderer;
+    // När InputHandler skapas aktiveras "raw mode" i terminalen. När den tas bort återställs terminalen.
     InputHandler input;
 
+    // Rita ut spelplanen en gång innan spelet börjar.
     renderer.render(game);
 
     while (true) {
@@ -62,11 +65,13 @@ int main() {
                 game.reset();
                 break;
             case Action::Quit:
+                // Avsluta spelet direkt. Terminalen återställs automatiskt.
                 return 0;
             case Action::Unknown:
                 break;
         }
 
+        // Rita ut spelplanen igen efter varje sak du gör, även om inget ändrades.
         renderer.render(game);
     }
 

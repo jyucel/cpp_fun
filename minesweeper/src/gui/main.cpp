@@ -5,6 +5,7 @@
 #include "gui/GuiRenderer.h"
 #include <optional>
 
+// Applikationens övergripande tillstånd: antingen väljer spelaren svårighetsgrad eller spelar
 enum class AppState { SelectDifficulty, Playing };
 
 int main() {
@@ -16,6 +17,7 @@ int main() {
 
     AppState app_state = AppState::SelectDifficulty;
     GuiRenderer renderer;
+    // std::optional används eftersom inget spel finns förrän spelaren valt svårighetsgrad
     std::optional<Game> game;
 
     while (!WindowShouldClose()) {
@@ -30,6 +32,7 @@ int main() {
 
             if (selected) {
                 game.emplace(chosen);
+                // Anpassa fönstrets storlek till det valda brädet innan spelläget aktiveras
                 SetWindowSize(renderer.window_width(game->board()),
                               renderer.window_height(game->board()));
                 app_state = AppState::Playing;
@@ -43,6 +46,7 @@ int main() {
             const Color DM = {140, 140, 140, 255};
 
             const char* title = "MINESWEEPER";
+            // Centrera titeln horisontellt med MeasureText
             DrawText(title, MENU_W/2 - MeasureText(title, 28)/2, 35, 28, HL);
 
             DrawText("1  -  Nybörjare       9 x 9,   10 minor", 30, 110, 17, TX);
@@ -56,6 +60,7 @@ int main() {
 
         } else {
             if (IsKeyPressed(KEY_Q))      break;
+            // Escape tar tillbaka spelaren till menyn och återställer fönstrets ursprungsstorlek
             if (IsKeyPressed(KEY_ESCAPE)) {
                 SetWindowSize(MENU_W, MENU_H);
                 app_state = AppState::SelectDifficulty;
@@ -63,8 +68,10 @@ int main() {
             }
             if (IsKeyPressed(KEY_R)) game->reset();
 
+            // Musklick hanteras bara när spelet faktiskt pågår
             GameState gs = game->state();
             if (gs == GameState::Playing || gs == GameState::WaitingFirstClick) {
+                // Räkna om muspixlar till rad/kolumn med samma formel som GuiRenderer använder
                 Vector2 mouse = GetMousePosition();
                 int col = ((int)mouse.x - GuiRenderer::PADDING) / GuiRenderer::CELL_SIZE;
                 int row = ((int)mouse.y - GuiRenderer::PADDING - GuiRenderer::HEADER_HEIGHT) / GuiRenderer::CELL_SIZE;
