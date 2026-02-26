@@ -1,5 +1,6 @@
 #include "view/Renderer.h"
 #include <iostream>
+#include <string>
 
 // ANSI escape codes för terminal-färgsättning.
 // Formaten \033[48;5;Nm = bakgrundsfärg nr N, \033[38;5;Nm = textfärg nr N (256-färgspaletten).
@@ -30,42 +31,42 @@ void Renderer::clear_screen() const {
 }
 
 void Renderer::render_cell(const Cell& cell, bool is_cursor, bool reveal_all) const {
-    // Markörpositionen får gul bakgrund så att spelaren lätt ser var den befinner sig
-    const char* bg_cell    = is_cursor ? Color::BG_YELLOW : Color::BG_CELL;
-    const char* bg_revealed = is_cursor ? Color::BG_YELLOW : Color::BG_DARK_GREY;
+    // Fullbreddstecken (2 kolumner/tecken) kompenserar terminalens 2:1 höjd/bredd-ratio → kvadratiska celler
+    // Markören markeras med inverterade färger (reverse video)
+    const char* CUR   = is_cursor ? "\033[7m" : "";
+    // Fullbreddssiffror U+FF11–FF18, index 1–8
+    static const char* FW_DIGIT[] = { "", "１","２","３","４","５","６","７","８" };
 
     if (!cell.is_revealed) {
-        // reveal_all är sant när spelet förloras — visa alla bomber och felaktiga flaggor
         if (reveal_all && cell.is_mine) {
-            std::cout << Color::BG_RED << Color::FG_WHITE << " * " << Color::RESET;
+            std::cout << CUR << Color::FG_RED << "＊" << Color::RESET;
             return;
         }
         if (reveal_all && cell.mark == MarkState::Flagged && !cell.is_mine) {
-            // Felaktigt flaggad ruta — X markerar att spelaren hade fel
-            std::cout << Color::BG_RED << Color::FG_WHITE << " X " << Color::RESET;
+            std::cout << CUR << Color::FG_RED << "Ｘ" << Color::RESET;
             return;
         }
         switch (cell.mark) {
             case MarkState::None:
-                std::cout << bg_cell << "   " << Color::RESET;
+                std::cout << CUR << Color::BG_CELL << Color::FG_WHITE << "＃" << Color::RESET;
                 break;
             case MarkState::Flagged:
-                std::cout << Color::BG_FLAG << Color::FG_WHITE << " F " << Color::RESET;
+                std::cout << CUR << Color::BG_FLAG << Color::FG_WHITE << "Ｆ" << Color::RESET;
                 break;
             case MarkState::Questioned:
-                std::cout << Color::BG_QUEST << Color::FG_BLACK << " ? " << Color::RESET;
+                std::cout << CUR << Color::BG_QUEST << Color::FG_BLACK << "？" << Color::RESET;
                 break;
         }
         return;
     }
 
     if (cell.is_mine) {
-        std::cout << Color::BG_RED << Color::FG_WHITE << " * " << Color::RESET;
+        std::cout << CUR << Color::FG_RED << "＊" << Color::RESET;
         return;
     }
 
     if (cell.adjacent_mines == 0) {
-        std::cout << bg_revealed << "   " << Color::RESET;
+        std::cout << CUR << "  " << Color::RESET;   // 2 spaces = 2 kolumner
         return;
     }
 
@@ -78,32 +79,24 @@ void Renderer::render_cell(const Cell& cell, bool is_cursor, bool reveal_all) co
         case 4: fg = Color::FG_DARK_BLUE; break;
         case 5: fg = Color::FG_DARK_RED;  break;
         case 6: fg = Color::FG_CYAN;      break;
-        case 7: fg = Color::FG_BLACK;     break;
-        case 8: fg = Color::FG_WHITE;     break;
+        case 7: fg = Color::FG_WHITE;     break;
+        case 8: fg = Color::FG_GREY;      break;
         default: fg = Color::RESET;       break;
     }
-    std::cout << bg_revealed << fg << " " << cell.adjacent_mines << " " << Color::RESET;
+    std::cout << CUR << fg << FW_DIGIT[cell.adjacent_mines] << Color::RESET;
 }
 
 void Renderer::render_status(const Game& game) const {
-    std::cout << "\n";
-    std::cout << " Minor kvar: " << game.remaining_mines();
-
     switch (game.state()) {
         case GameState::WaitingFirstClick:
-            std::cout << "  |  Flytta med piltangenter, Enter for att oppna";
-            break;
         case GameState::Playing:
-            std::cout << "  |  Enter: oppna   F: flagga   R: reset   Q: avsluta";
+            std::cout << "\n Enter: öppna  F: flagga  R: reset  Q: avsluta\n";
             break;
         case GameState::Won:
-            std::cout << "  |  Du vann! Tryck R for att spela igen";
-            break;
         case GameState::Lost:
-            std::cout << "  |  Game over! Tryck R for att spela igen";
+            std::cout << "\n R: spela igen  Q: avsluta\n";
             break;
     }
-    std::cout << "\n";
 }
 
 void Renderer::render(const Game& game) const {
@@ -111,42 +104,55 @@ void Renderer::render(const Game& game) const {
 
     const Board& board = game.board();
     const int cols = board.cols();
+    // Inre bredd: 2 kolumner/cell (fullbredd) + 1 separator mellan celler
+    const int inner = 3 * cols - 1;
 
-    // Översta raden
+    // Rubrik — titel och spelstatus i en ram som sitter ihop med brädet
     std::cout << " ┌";
-    for (int c = 0; c < cols; c++) {
-        std::cout << "───";
-        if (c < cols - 1) std::cout << "┬";
-    }
+    for (int i = 0; i < inner; i++) std::cout << "─";
     std::cout << "┐\n";
 
-    // Avslöja alla rutor om spelet är förlorat, så att spelaren ser vad som gömde sig
+    std::string left = " MINES";
+    std::string right;
+    switch (game.state()) {
+        case GameState::Won:  right = "Vann! "; break;
+        case GameState::Lost: right = "Over! "; break;
+        default: right = "Kvar:" + std::to_string(game.remaining_mines()) + " "; break;
+    }
+    int gap = inner - (int)left.size() - (int)right.size();
+    std::cout << " │" << left;
+    for (int i = 0; i < (gap > 0 ? gap : 1); i++) std::cout << " ";
+    std::cout << right << "│\n";
+
+    // Rubrikens nederkant kopplar till brädet
+    std::cout << " ├";
+    for (int i = 0; i < inner; i++) std::cout << "─";
+    std::cout << "┤\n";
+
+    // Brädet — │ mellan kolumner, tunn grå separator mellan rader
     bool reveal_all = (game.state() == GameState::Lost);
     for (int r = 0; r < board.rows(); r++) {
         std::cout << " │";
         for (int c = 0; c < cols; c++) {
             bool is_cursor = (r == game.cursor_row() && c == game.cursor_col());
             render_cell(board.at(r, c), is_cursor, reveal_all);
-            std::cout << "│";
+            if (c < cols - 1) std::cout << "│";
         }
-        std::cout << "\n";
+        std::cout << "│\n";
 
         if (r < board.rows() - 1) {
-            std::cout << " ├";
+            std::cout << Color::FG_GREY << " ├";
             for (int c = 0; c < cols; c++) {
-                std::cout << "───";
+                std::cout << "──";
                 if (c < cols - 1) std::cout << "┼";
             }
-            std::cout << "┤\n";
+            std::cout << "┤" << Color::RESET << "\n";
         }
     }
 
-    // Understa raden
+    // Brädets underkant
     std::cout << " └";
-    for (int c = 0; c < cols; c++) {
-        std::cout << "───";
-        if (c < cols - 1) std::cout << "┴";
-    }
+    for (int i = 0; i < inner; i++) std::cout << "─";
     std::cout << "┘\n";
 
     render_status(game);
