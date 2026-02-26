@@ -122,11 +122,19 @@ void GuiRenderer::render_cell(const Cell& cell, int x, int y, bool is_hover, boo
 
         // Centrera textens symbol på cellen med MeasureText för horisontell justering
         if (cell.mark == MarkState::Flagged) {
-            int fw = MeasureText("F", 18);
-            DrawText("F", x + (S - fw)/2, y + (S - 18)/2, 18, C::FLAG);
+            const int fs = 24;
+            int fw = MeasureText("F", fs);
+            int tx = x + (S - fw)/2, ty = y + (S - fs)/2;
+            DrawText("F", tx + 1, ty,     fs, C::FLAG);
+            DrawText("F", tx,     ty + 1, fs, C::FLAG);
+            DrawText("F", tx,     ty,     fs, C::FLAG);
         } else if (cell.mark == MarkState::Questioned) {
-            int qw = MeasureText("?", 18);
-            DrawText("?", x + (S - qw)/2, y + (S - 18)/2, 18, C::QUESTION);
+            const int fs = 24;
+            int qw = MeasureText("?", fs);
+            int tx = x + (S - qw)/2, ty = y + (S - fs)/2;
+            DrawText("?", tx + 1, ty,     fs, C::QUESTION);
+            DrawText("?", tx,     ty + 1, fs, C::QUESTION);
+            DrawText("?", tx,     ty,     fs, C::QUESTION);
         }
 
     } else if (cell.is_mine) {
@@ -142,8 +150,14 @@ void GuiRenderer::render_cell(const Cell& cell, int x, int y, bool is_hover, boo
         if (cell.adjacent_mines > 0) {
             std::string num = std::to_string(cell.adjacent_mines);
             Color nc = NUM_COLORS[cell.adjacent_mines];
-            int nw = MeasureText(num.c_str(), 18);
-            DrawText(num.c_str(), x + (S - nw)/2, y + (S - 18)/2, 18, nc);
+            const int fs = 24;
+            int nw = MeasureText(num.c_str(), fs);
+            int tx = x + (S - nw)/2;
+            int ty = y + (S - fs)/2;
+            // Rita tre gånger med förskjutning i x och y för kraftigare fetstilseffekt
+            DrawText(num.c_str(), tx + 1, ty,     fs, nc);
+            DrawText(num.c_str(), tx,     ty + 1, fs, nc);
+            DrawText(num.c_str(), tx,     ty,     fs, nc);
         }
     }
 }
