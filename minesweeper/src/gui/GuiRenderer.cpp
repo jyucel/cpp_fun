@@ -3,11 +3,14 @@
 #include "raylib.h"
 #include <string>
 
+// Färgpaletten för det grafiska gränssnittet, samlad i ett namespace för tydlighet
 namespace C {
     const Color BG           = {30,  30,  30,  255};
     const Color HEADER_BG    = {20,  20,  20,  255};
     const Color HIDDEN       = {70,  130, 180, 255};
+    // Ljusare blå när musen hovrar över en ruta
     const Color HIDDEN_HOVER = {95,  155, 205, 255};
+    // Ljus och mörk kant skapar ett upphöjt 3D-utseende på oupptäckta celler
     const Color HIDDEN_LIGHT = {115, 175, 225, 255};
     const Color HIDDEN_DARK  = {45,  90,  130, 255};
     const Color REVEALED     = {185, 185, 185, 255};
@@ -72,6 +75,7 @@ void GuiRenderer::render_header(const Game& game) const {
 void GuiRenderer::render_board(const Game& game) const {
     const Board& board = game.board();
 
+    // Räkna ut vilken cell musen befinner sig över med hjälp av pixelkoordinater
     Vector2 mouse = GetMousePosition();
     int hover_col = ((int)mouse.x - PADDING) / CELL_SIZE;
     int hover_row = ((int)mouse.y - PADDING - HEADER_HEIGHT) / CELL_SIZE;
@@ -89,7 +93,7 @@ void GuiRenderer::render_board(const Game& game) const {
 
 void GuiRenderer::render_cell(const Cell& cell, int x, int y, bool is_hover, bool reveal_all) const {
     const int S = CELL_SIZE;
-    const int b = 3;
+    const int b = 3;  // kantbredd i pixlar för det upphöjda 3D-utseendet
 
     if (!cell.is_revealed) {
         // Visa oupptäckt bomb
@@ -108,6 +112,7 @@ void GuiRenderer::render_cell(const Cell& cell, int x, int y, bool is_hover, boo
             return;
         }
 
+        // Rita cellens kropp med upphöjda kanter: ljus överdel/vänsterkant + mörk nederdel/högerkant
         Color base = is_hover ? C::HIDDEN_HOVER : C::HIDDEN;
         DrawRectangle(x + b, y + b, S - b*2, S - b*2, base);
         DrawRectangle(x,     y,     S,       b,       C::HIDDEN_LIGHT);  // top
@@ -115,6 +120,7 @@ void GuiRenderer::render_cell(const Cell& cell, int x, int y, bool is_hover, boo
         DrawRectangle(x + b, y+S-b, S - b,   b,       C::HIDDEN_DARK);   // bottom
         DrawRectangle(x+S-b, y + b, b,       S - b,   C::HIDDEN_DARK);   // right
 
+        // Centrera textens symbol på cellen med MeasureText för horisontell justering
         if (cell.mark == MarkState::Flagged) {
             int fw = MeasureText("F", 18);
             DrawText("F", x + (S - fw)/2, y + (S - 18)/2, 18, C::FLAG);
@@ -129,6 +135,7 @@ void GuiRenderer::render_cell(const Cell& cell, int x, int y, bool is_hover, boo
         DrawText("*", x + (S - mw)/2, y + (S - 22)/2, 22, WHITE);
 
     } else {
+        // Avslöjd säker ruta: tunn mörkare ram runt en ljusare yta ger ett nedsänkt utseende
         DrawRectangle(x, y, S, S, C::REVEALED_EDGE);
         DrawRectangle(x + 1, y + 1, S - 2, S - 2, C::REVEALED);
 

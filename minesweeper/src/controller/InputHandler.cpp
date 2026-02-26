@@ -11,18 +11,21 @@ InputHandler::~InputHandler() {
 }
 
 void InputHandler::enable_raw_mode() {
+    // Spara originalinställningarna för att kunna återställa dem vid destruktion
     if (tcgetattr(STDIN_FILENO, &_original_termios) == -1)
         throw std::runtime_error("Failed to get terminal attributes");
 
     struct termios raw = _original_termios;
 
-    // Stäng av echo och canonical mode
+    // Stäng av echo och canonical mode — utan detta måste spelaren trycka Enter
+    // efter varje tangent och tecknen syns i terminalen
     raw.c_lflag &= ~(ECHO | ICANON);
 
     // Läs ett tecken i taget, ingen timeout
     raw.c_cc[VMIN]  = 1;
     raw.c_cc[VTIME] = 0;
 
+    // TCSAFLUSH väntar tills utdatabufferten är tömd innan inställningarna träder i kraft
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
         throw std::runtime_error("Failed to set terminal attributes");
 }
@@ -37,6 +40,7 @@ Action InputHandler::read() const {
         return Action::Unknown;
 
     // Piltangenter skickas som escape sequences: ESC [ A/B/C/D
+    // Vi läser ytterligare två byte för att skilja på ESC-sekvenser och ett enkelt ESC-tryck
     if (c == '\033') {
         char seq[2];
         if (::read(STDIN_FILENO, &seq[0], 1) == -1) return Action::Unknown;
@@ -53,6 +57,7 @@ Action InputHandler::read() const {
         return Action::Unknown;
     }
 
+    // Både \r (CR) och \n (LF) accepteras för Enter — beroende på terminalkonfiguration
     switch (c) {
         case '\r':
         case '\n': return Action::Reveal;

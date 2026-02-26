@@ -11,11 +11,13 @@ Game::Game(Difficulty difficulty)
 }
 
 void Game::reveal(int row, int col) {
+    // Inget händer om spelet redan är slut
     if (_state != GameState::WaitingFirstClick && _state != GameState::Playing)
         return;
 
     _board.reveal(row, col);
 
+    // Övergå till Playing direkt efter första avslöjningen
     if (_state == GameState::WaitingFirstClick)
         _state = GameState::Playing;
 
@@ -25,6 +27,7 @@ void Game::reveal(int row, int col) {
         return;
     }
 
+    // Kontrollera vinstvillkoret efter varje lyckad avslöjning
     if (_board.all_revealed())
         _state = GameState::Won;
 }
@@ -33,6 +36,8 @@ void Game::toggle_mark(int row, int col) {
     if (_state != GameState::Playing && _state != GameState::WaitingFirstClick)
         return;
 
+    // Läs tillståndet före och efter för att veta om en flagga lades till eller togs bort,
+    // eftersom Board::toggle_mark() hanterar cykeln internt
     MarkState before = _board.at(row, col).mark;
     _board.toggle_mark(row, col);
     MarkState after = _board.at(row, col).mark;
@@ -44,6 +49,7 @@ void Game::toggle_mark(int row, int col) {
 }
 
 void Game::move_cursor(int row, int col) {
+    // Ignorera försök att flytta utanför brädet — markören fastnar vid kanten
     if (row >= 0 && row < _board.rows() &&
         col >= 0 && col < _board.cols())
     {
