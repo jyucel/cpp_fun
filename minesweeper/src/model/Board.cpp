@@ -108,8 +108,12 @@ void Board::reveal(int row, int col) {
     if (!in_bounds(row, col)) return;
 
     Cell& cell = _grid[row][col];
-    // Rutor med flagga kan inte öppnas av misstag. Du måste ta bort flaggan först.
-    if (cell.is_revealed || cell.mark == MarkState::Flagged) return;
+    if (cell.is_revealed) return;
+    // Vänsterklick på en flaggad ruta tar bort flaggan — ett extra klick krävs för att avslöja.
+    if (cell.mark == MarkState::Flagged) {
+        cell.mark = MarkState::None;
+        return;
+    }
 
     // När du öppnar en ruta för första gången placeras minorna. Den rutan är alltid säker.
     if (!_mines_placed)

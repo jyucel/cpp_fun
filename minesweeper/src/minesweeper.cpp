@@ -7,13 +7,13 @@
 // Visar en meny och väntar på att du väljer nivå. Alla andra tecken ignoreras.
 Difficulty select_difficulty() {
     std::cout << "\033[2J\033[H";  // clear screen
-    std::cout << "╔═══════════════════╗\n";
-    std::cout << "║    MINESWEEPER    ║\n";
-    std::cout << "╠═══════════════════╣\n";
-    std::cout << "║  1. Beginner      ║\n";
-    std::cout << "║  2. Intermediate  ║\n";
-    std::cout << "║  3. Expert        ║\n";
-    std::cout << "╚═══════════════════╝\n";
+    std::cout << "╔═════════════════════════════════════╗\n";
+    std::cout << "║             MINESWEEPER             ║\n";
+    std::cout << "╠═════════════════════════════════════╣\n";
+    std::cout << "║  1.  Beginner        9x9, 10 minor  ║\n";
+    std::cout << "║  2.  Intermediate  16x16, 40 minor  ║\n";
+    std::cout << "║  3.  Expert        30x16, 99 minor  ║\n";
+    std::cout << "╚═════════════════════════════════════╝\n";
     std::cout << "Välj nivå (1-3): ";
 
     char c;

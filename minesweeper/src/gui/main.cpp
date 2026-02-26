@@ -73,10 +73,13 @@ int main() {
             if (gs == GameState::Playing || gs == GameState::WaitingFirstClick) {
                 // Räkna om muspixlar till rad/kolumn med samma formel som GuiRenderer använder
                 Vector2 mouse = GetMousePosition();
-                int col = ((int)mouse.x - GuiRenderer::PADDING) / GuiRenderer::CELL_SIZE;
-                int row = ((int)mouse.y - GuiRenderer::PADDING - GuiRenderer::HEADER_HEIGHT) / GuiRenderer::CELL_SIZE;
-                bool in_board = row >= 0 && row < game->board().rows() &&
-                                col >= 0 && col < game->board().cols();
+                int mx = (int)mouse.x - GuiRenderer::PADDING;
+                int my = (int)mouse.y - GuiRenderer::PADDING - GuiRenderer::HEADER_HEIGHT;
+                bool in_board = mx >= 0 && my >= 0 &&
+                                mx < game->board().cols() * GuiRenderer::CELL_SIZE &&
+                                my < game->board().rows() * GuiRenderer::CELL_SIZE;
+                int col = mx / GuiRenderer::CELL_SIZE;
+                int row = my / GuiRenderer::CELL_SIZE;
 
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)  && in_board) game->reveal(row, col);
                 if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && in_board) game->toggle_mark(row, col);
