@@ -9,6 +9,9 @@ namespace Color {
     const char* BG_DARK_GREY = "\033[48;5;235m";
     const char* BG_YELLOW    = "\033[48;5;226m";
     const char* BG_RED       = "\033[48;5;196m";
+    const char* BG_CELL      = "\033[46m";           // cyan bg för oupptäckta rutor
+    const char* BG_FLAG      = "\033[48;5;202m";     // orange bg för flaggade rutor
+    const char* BG_QUEST     = "\033[48;5;220m";     // gul bg för frågemark-rutor
     const char* FG_GREY      = "\033[38;5;240m";
     const char* FG_YELLOW    = "\033[38;5;226m";
     const char* FG_BLUE      = "\033[34m";
@@ -27,42 +30,42 @@ void Renderer::clear_screen() const {
 }
 
 void Renderer::render_cell(const Cell& cell, bool is_cursor, bool reveal_all) const {
-    // Markörpositionen får gul färg så att spelaren lätt ser var den befinner sig
-    const char* block_color  = is_cursor ? Color::FG_YELLOW : Color::FG_CYAN;
-    const char* bg_revealed  = is_cursor ? Color::BG_YELLOW : Color::BG_DARK_GREY;
+    // Markörpositionen får gul bakgrund så att spelaren lätt ser var den befinner sig
+    const char* bg_cell    = is_cursor ? Color::BG_YELLOW : Color::BG_CELL;
+    const char* bg_revealed = is_cursor ? Color::BG_YELLOW : Color::BG_DARK_GREY;
 
     if (!cell.is_revealed) {
         // reveal_all är sant när spelet förloras — visa alla bomber och felaktiga flaggor
         if (reveal_all && cell.is_mine) {
-            std::cout << Color::BG_RED << Color::FG_WHITE << "  *  " << Color::RESET;
+            std::cout << Color::BG_RED << Color::FG_WHITE << " * " << Color::RESET;
             return;
         }
         if (reveal_all && cell.mark == MarkState::Flagged && !cell.is_mine) {
             // Felaktigt flaggad ruta — X markerar att spelaren hade fel
-            std::cout << block_color << "█" << Color::FG_RED << " X " << block_color << "█" << Color::RESET;
+            std::cout << Color::BG_RED << Color::FG_WHITE << " X " << Color::RESET;
             return;
         }
         switch (cell.mark) {
             case MarkState::None:
-                std::cout << block_color << "█████" << Color::RESET;
+                std::cout << bg_cell << "   " << Color::RESET;
                 break;
             case MarkState::Flagged:
-                std::cout << block_color << "█" << Color::FG_GREEN << " F " << block_color << "█" << Color::RESET;
+                std::cout << Color::BG_FLAG << Color::FG_WHITE << " F " << Color::RESET;
                 break;
             case MarkState::Questioned:
-                std::cout << block_color << "█" << Color::FG_CYAN << " ? " << block_color << "█" << Color::RESET;
+                std::cout << Color::BG_QUEST << Color::FG_BLACK << " ? " << Color::RESET;
                 break;
         }
         return;
     }
 
     if (cell.is_mine) {
-        std::cout << Color::BG_RED << Color::FG_WHITE << "  *  " << Color::RESET;
+        std::cout << Color::BG_RED << Color::FG_WHITE << " * " << Color::RESET;
         return;
     }
 
     if (cell.adjacent_mines == 0) {
-        std::cout << bg_revealed << "     " << Color::RESET;
+        std::cout << bg_revealed << "   " << Color::RESET;
         return;
     }
 
@@ -79,7 +82,7 @@ void Renderer::render_cell(const Cell& cell, bool is_cursor, bool reveal_all) co
         case 8: fg = Color::FG_WHITE;     break;
         default: fg = Color::RESET;       break;
     }
-    std::cout << bg_revealed << fg << "  " << cell.adjacent_mines << "  " << Color::RESET;
+    std::cout << bg_revealed << fg << " " << cell.adjacent_mines << " " << Color::RESET;
 }
 
 void Renderer::render_status(const Game& game) const {
@@ -112,7 +115,7 @@ void Renderer::render(const Game& game) const {
     // Översta raden
     std::cout << " ┌";
     for (int c = 0; c < cols; c++) {
-        std::cout << "─────";
+        std::cout << "───";
         if (c < cols - 1) std::cout << "┬";
     }
     std::cout << "┐\n";
@@ -120,7 +123,6 @@ void Renderer::render(const Game& game) const {
     // Avslöja alla rutor om spelet är förlorat, så att spelaren ser vad som gömde sig
     bool reveal_all = (game.state() == GameState::Lost);
     for (int r = 0; r < board.rows(); r++) {
-        // Cellrad
         std::cout << " │";
         for (int c = 0; c < cols; c++) {
             bool is_cursor = (r == game.cursor_row() && c == game.cursor_col());
@@ -129,11 +131,10 @@ void Renderer::render(const Game& game) const {
         }
         std::cout << "\n";
 
-        // Separator eller understa raden
         if (r < board.rows() - 1) {
             std::cout << " ├";
             for (int c = 0; c < cols; c++) {
-                std::cout << "─────";
+                std::cout << "───";
                 if (c < cols - 1) std::cout << "┼";
             }
             std::cout << "┤\n";
@@ -143,7 +144,7 @@ void Renderer::render(const Game& game) const {
     // Understa raden
     std::cout << " └";
     for (int c = 0; c < cols; c++) {
-        std::cout << "─────";
+        std::cout << "───";
         if (c < cols - 1) std::cout << "┴";
     }
     std::cout << "┘\n";
